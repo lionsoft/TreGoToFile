@@ -1,8 +1,8 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Shell;
 using TreGoToFile.Extensions;
 using TreGoToFile.Parsers;
 
@@ -10,10 +10,11 @@ namespace TreGoToFile
 {
     internal class TaskRunnerExplorerConsole
     {
-        private static ErrorParser parser = new ErrorParser();
+        private static readonly ErrorParser parser = new ErrorParser();
 
         internal static void OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             var output = GetConsoleOutput(sender);
             if (output != null)
             {

@@ -7,12 +7,14 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
 
 namespace TreGoToFile
 {
@@ -33,27 +35,21 @@ namespace TreGoToFile
     /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
     /// </para>
     /// </remarks>
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
-    [Guid(TreGoToFilePackage.PackageGuidString)]
+    [Guid(PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    [ProvideAutoLoad(UIContextGuids80.SolutionExists)]
-    public sealed class TreGoToFilePackage : Package
+    [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
+    public sealed class TreGoToFilePackage : AsyncPackage
     {
         public const string PackageGuidString = "449347ce-9fb6-4973-832f-04994d80d511";
         private static DTE dte;
-
         internal static DTE DTE
         {
             get
             {
-                if (dte == null)
-                {
-                    dte = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
-                }
-
-
-                return dte;
+                ThreadHelper.ThrowIfNotOnUIThread();
+                return dte ?? (dte = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE);
             }
         }
 
@@ -63,13 +59,11 @@ namespace TreGoToFile
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
-
             EventManager.RegisterClassHandler(typeof(RichTextBox), Control.MouseDoubleClickEvent, new MouseButtonEventHandler(TaskRunnerExplorerConsole.OnMouseDoubleClick));
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         }
-
         #endregion
     }
 }

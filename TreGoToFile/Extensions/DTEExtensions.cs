@@ -18,6 +18,7 @@ namespace TreGoToFile.Extensions
 
             try
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
                 var openDoc3 = Package.GetGlobalService(typeof(SVsUIShellOpenDocument)) as IVsUIShellOpenDocument3;
 
                 Guid reason = VSConstants.NewDocumentStateReason.Navigation;
